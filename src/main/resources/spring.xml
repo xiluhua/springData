@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:repository="http://www.springframework.org/schema/data/repository"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.8.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+		http://www.springframework.org/schema/data/repository http://www.springframework.org/schema/data/repository/spring-repository-2.1.xsd">
+
+	<!-- 使用 CGLIB 代理 -->
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<aop:config proxy-target-class="true" />
+	
+	<context:property-placeholder location="classpath:db.properties"/>
+	<!-- 配置自动扫描的包 
+		org.springframework.context.annotation.ClassPathBeanDefinitionScanner
+		不会被注册到 beanDefinition 容器中，但是会扫描 @Component 注解的类，把他们注册到 beanDefinition 容器
+	-->
+	<context:component-scan base-package="com.springData"></context:component-scan>
+	
+	<!-- 数据源配置1 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<property name="driverClassName" value="${db.driver}" />
+		<property name="url" value="${db.jdbc.url}" />
+		<property name="username" value="${db.login.name}"></property>
+		<property name="password" value="${db.login.password}" />
+		<property name="filters" value="${db.filters}"></property>
+		<property name="maxActive" value="${db.pool.maxActive}"></property>
+		<property name="initialSize" value="${db.pool.initialSize}"></property>
+		<property name="minIdle" value="${db.pool.minIdle}"></property>
+		<property name="maxWait" value="${db.maxWait}"></property>
+		<property name="timeBetweenEvictionRunsMillis" value="${db.timeBetweenEvictionRunsMillis}"></property>
+		<property name="minEvictableIdleTimeMillis" value="${db.minEvictableIdleTimeMillis}"></property>
+		<property name="validationQuery" value="${db.validationQuery}"></property>
+		<property name="testWhileIdle" value="${db.testWhileIdle}"></property>
+		<property name="testOnBorrow" value="${db.testOnBorrow}"></property>
+		<property name="testOnReturn" value="${db.testOnReturn}"></property>
+		<property name="poolPreparedStatements" value="${db.poolPreparedStatements}"></property>
+		<property name="maxOpenPreparedStatements" value="${db.maxOpenPreparedStatements}"></property>
+		<!-- 监控数据库 -->
+		<property name="proxyFilters">
+			<list>
+				<ref bean="log-filter" />
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 输出可执行的SQL -->
+	<bean id="log-filter" class="com.alibaba.druid.filter.logging.Log4jFilter">
+		<property name="statementExecutableSqlLogEnable" value="true" />
+	</bean>
+	
+	<!-- 配置 EntityManagerFactory -->
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- 配置 JPA 提供商的适配器. 可以通过内部 bean 的方式来配置 -->
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+		</property>	
+		<!-- 配置实体类所在的包 -->
+		<property name="packagesToScan" value="com.springData.entity"></property>
+		
+		<!-- 配置 JPA 的基本属性. 例如 JPA 实现产品的属性 -->
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- 配置 JPA 使用的事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory"></property>	
+	</bean>
+	
+	<!-- 配置支持基于注解是事务配置 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	
+	
+	
+	<!-- 配置 springData 扫描的包 -->
+	<jpa:repositories base-package="com.springData" entity-manager-factory-ref="entityManagerFactory"></jpa:repositories>
+</beans>
