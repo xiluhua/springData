@@ -16,7 +16,7 @@ import javax.persistence.Transient;
 import com.alibaba.fastjson.annotation.JSONField;
 
 @Cacheable(true)
-@Table(name="JPA_CUSTOMERS")
+@Table(name="jpa_customers")
 @Entity
 public class Customer {
 
